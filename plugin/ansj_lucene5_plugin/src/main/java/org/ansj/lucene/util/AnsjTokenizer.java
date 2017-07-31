@@ -39,38 +39,34 @@ public final class AnsjTokenizer extends Tokenizer {
 		this.stops = stops;
 		this.synonyms = synonyms;
 	}
+	
+
 
 	@Override
 	public final boolean incrementToken() throws IOException {
-
+		int position = 0;
 		if (result == null) {
 			parse();
 		}
 
 		Object obj = result.pollFirst();
-
 		if (obj == null) {
 			result = null;
 			return false;
 		}
 
-		int position = 0;
-
 		if (obj instanceof Term) {
 			clearAttributes();
-
 			Term term = (Term) obj;
-
 			while (filterTerm(term)) { //停用词
 				term = (Term) result.pollFirst();
-				if (obj == null) {
+				if (term == null) {
 					result = null;
 					return false;
 				}
 				position++;
 			}
 
-			position++;
 
 			List<String> synonyms = term.getSynonyms(); //获得同义词
 
@@ -84,7 +80,7 @@ public final class AnsjTokenizer extends Tokenizer {
 			} else {
 				rName = term.getName();
 			}
-
+			position++;
 			offsetAtt.setOffset(term.getOffe(), term.getOffe() + term.getName().length());
 			typeAtt.setType(term.getNatureStr());
 
@@ -100,7 +96,7 @@ public final class AnsjTokenizer extends Tokenizer {
 	}
 
 	private boolean filterTerm(Term term) {
-		if (stops != null) {
+		if (stops != null && stops.size() > 0) {
 			for (StopRecognition filterRecognition : stops) {
 				if (filterRecognition.filter(term)) {
 					return true;

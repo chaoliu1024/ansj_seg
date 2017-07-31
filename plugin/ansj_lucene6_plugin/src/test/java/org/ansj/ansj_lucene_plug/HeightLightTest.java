@@ -1,11 +1,11 @@
-package org.ansj.ansj_lucene5_plug;
+package org.ansj.ansj_lucene_plug;
 
 import java.io.IOException;
 import java.io.StringReader;
 
 import org.ansj.library.DicLibrary;
-import org.ansj.lucene5.AnsjAnalyzer;
-import org.ansj.lucene5.AnsjAnalyzer.TYPE;
+import org.ansj.lucene6.AnsjAnalyzer;
+import org.ansj.lucene6.AnsjAnalyzer.TYPE;
 import org.ansj.splitWord.analysis.IndexAnalysis;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -61,7 +61,6 @@ public class HeightLightTest {
 		IndexSearcher isearcher = new IndexSearcher(directoryReader);
 		System.out.println(query);
 		TopDocs hits = isearcher.search(query, 5);
-		System.out.println(hits.scoreDocs.length);
 		for (int i = 0; i < hits.scoreDocs.length; i++) {
 			int docId = hits.scoreDocs[i].doc;
 			Document document = isearcher.doc(docId);

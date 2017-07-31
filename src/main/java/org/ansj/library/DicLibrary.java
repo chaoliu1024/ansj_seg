@@ -1,6 +1,7 @@
 package org.ansj.library;
 
 import java.io.BufferedReader;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -88,7 +89,6 @@ public class DicLibrary {
 	 * 将用户自定义词典清空
 	 */
 	public static void clear(String key) {
-
 		get(key).clear();
 	}
 
@@ -119,7 +119,7 @@ public class DicLibrary {
 		}
 		Forest forest = kv.getV();
 		if (forest == null) {
-			forest = init(key, kv);
+			forest = init(key, kv, false);
 		}
 		return forest;
 
@@ -140,6 +140,16 @@ public class DicLibrary {
 	}
 
 	/**
+	 * 根据keys获取词典集合
+	 * 
+	 * @param keys
+	 * @return
+	 */
+	public static Forest[] gets(Collection<String> keys) {
+		return gets(keys.toArray(new String[keys.size()]));
+	}
+
+	/**
 	 * 用户自定义词典加载
 	 * 
 	 * @param key
@@ -147,13 +157,19 @@ public class DicLibrary {
 	 * @return
 	 */
 
-	private synchronized static Forest init(String key, KV<String, Forest> kv) {
+	private synchronized static Forest init(String key, KV<String, Forest> kv, boolean reload) {
 		Forest forest = kv.getV();
 		if (forest != null) {
-			return forest;
+			if (reload) {
+				forest.clear();
+			} else {
+				return forest;
+			}
+		} else {
+			forest = new Forest();
 		}
 		try {
-			forest = new Forest();
+
 			LOG.debug("begin init dic !");
 			long start = System.currentTimeMillis();
 			String temp = null;
@@ -182,7 +198,7 @@ public class DicLibrary {
 			kv.setV(forest);
 			return forest;
 		} catch (Exception e) {
-			LOG.error("Init ambiguity library error :" + e.getMessage() + ", path: " + kv.getK());
+			LOG.error("Init dic library error :" + e.getMessage() + ", path: " + kv.getK());
 			DIC.remove(key);
 			return null;
 		}
@@ -197,6 +213,7 @@ public class DicLibrary {
 	 */
 	public static void put(String key, String path, Forest forest) {
 		DIC.put(key, KV.with(path, forest));
+		MyStaticValue.ENV.put(key, path);
 	}
 
 	/**
@@ -221,7 +238,6 @@ public class DicLibrary {
 	 * @param dic2
 	 */
 	public static void put(String key, String path) {
-
 		put(key, path, null);
 	}
 
@@ -246,6 +262,11 @@ public class DicLibrary {
 	}
 
 	public static KV<String, Forest> remove(String key) {
+		KV<String, Forest> kv = DIC.get(key);
+		if (kv != null && kv.getV() != null) {
+			kv.getV().clear();
+		}
+		MyStaticValue.ENV.remove(key) ;
 		return DIC.remove(key);
 	}
 
@@ -254,8 +275,15 @@ public class DicLibrary {
 	}
 
 	public static void reload(String key) {
-		DIC.get(key).setV(null);
-		get(key);
+		if (!MyStaticValue.ENV.containsKey(key)) { //如果变量中不存在直接删掉这个key不解释了
+			remove(key);
+		}
+
+		putIfAbsent(key, MyStaticValue.ENV.get(key));
+
+		KV<String, Forest> kv = DIC.get(key);
+
+		init(key, kv, true);
 	}
 
 }

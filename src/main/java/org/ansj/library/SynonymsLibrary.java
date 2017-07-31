@@ -54,26 +54,34 @@ public class SynonymsLibrary {
 			return null;
 		}
 
-		SmartForest<List<String>> sw = (SmartForest<List<String>>) kv.getV();
+		SmartForest<List<String>> sw = kv.getV();
 		if (sw == null) {
-			sw = init(key, kv);
+			sw = init(key, kv, false);
 		}
 		return sw;
 	}
 
 	/**
-	 * 加载
+	 * 加载词典
 	 * 
+	 * @param key
+	 * @param kv
+	 * @param reload 是否更新词典
 	 * @return
 	 */
-	private static synchronized SmartForest<List<String>> init(String key, KV<String, SmartForest<List<String>>> kv) {
+	private static synchronized SmartForest<List<String>> init(String key, KV<String, SmartForest<List<String>>> kv, boolean reload) {
 
 		SmartForest<List<String>> forest = kv.getV();
-		if (forest != null) {
-			return forest;
-		}
 
-		forest = new SmartForest<>();
+		if (forest != null) {
+			if (reload) {
+				forest.clear();
+			} else {
+				return forest;
+			}
+		} else {
+			forest = new SmartForest<>();
+		}
 
 		LOG.debug("begin init synonyms " + kv.getK());
 		long start = System.currentTimeMillis();
@@ -126,6 +134,7 @@ public class SynonymsLibrary {
 
 	public static void put(String key, String path, SmartForest<List<String>> value) {
 		SYNONYMS.put(key, KV.with(path, value));
+		MyStaticValue.ENV.put(key, path);
 	}
 
 	/**
@@ -135,7 +144,11 @@ public class SynonymsLibrary {
 	 * @return
 	 */
 	public static KV<String, SmartForest<List<String>>> remove(String key) {
-
+		KV<String, SmartForest<List<String>>> kv = SYNONYMS.get(key);
+		if (kv != null && kv.getV() != null) { //先清空后删除
+			kv.getV().clear();
+		}
+		MyStaticValue.ENV.remove(key) ;
 		return SYNONYMS.remove(key);
 	}
 
@@ -147,8 +160,15 @@ public class SynonymsLibrary {
 	 */
 	public static void reload(String key) {
 
-		SYNONYMS.get(key).setV(null);
-		get(key);
+		if (!MyStaticValue.ENV.containsKey(key)) { //如果变量中不存在直接删掉这个key不解释了
+			remove(key);
+		}
+
+		putIfAbsent(key, MyStaticValue.ENV.get(key));
+
+		KV<String, SmartForest<List<String>>> kv = SYNONYMS.get(key);
+
+		init(key, kv, true);
 	}
 
 	public static Set<String> keys() {

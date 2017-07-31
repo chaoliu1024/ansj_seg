@@ -3,8 +3,8 @@ package org.ansj.library;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.ansj.app.crf.Model;
 import org.ansj.app.crf.SplitWord;
@@ -55,7 +55,7 @@ public class CrfLibrary {
 			return null;
 		}
 
-		SplitWord sw = (SplitWord) kv.getV();
+		SplitWord sw = kv.getV();
 		if (sw == null) {
 			sw = initCRFModel(kv);
 		}
@@ -101,8 +101,8 @@ public class CrfLibrary {
 	}
 
 	public static void put(String key, String path, SplitWord sw) {
-
 		CRF.put(key, KV.with(path, sw));
+		MyStaticValue.ENV.put(key, path);
 	}
 
 	/**
@@ -112,7 +112,7 @@ public class CrfLibrary {
 	 * @return
 	 */
 	public static KV<String, SplitWord> remove(String key) {
-
+		MyStaticValue.ENV.remove(key) ;
 		return CRF.remove(key);
 	}
 
@@ -123,9 +123,12 @@ public class CrfLibrary {
 	 * @return
 	 */
 	public static void reload(String key) {
+		KV<String, SplitWord> kv = CRF.get(key);
+		if (kv != null) {
+			CRF.get(key).setV(null);
+		}
 
-		CRF.get(key).setV(null);
-		get(key);
+		LOG.warn("make sure ,this reload not use same obj , it to instance a new model");
 	}
 
 	public static Set<String> keys() {

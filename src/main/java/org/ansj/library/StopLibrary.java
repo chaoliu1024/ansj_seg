@@ -4,8 +4,8 @@ import java.io.BufferedReader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.ansj.dic.PathToStream;
 import org.ansj.domain.KV;
@@ -101,7 +101,7 @@ public class StopLibrary {
 		}
 		StopRecognition stopRecognition = kv.getV();
 		if (stopRecognition == null) {
-			stopRecognition = init(key, kv);
+			stopRecognition = init(key, kv, false);
 		}
 		return stopRecognition;
 
@@ -114,14 +114,20 @@ public class StopLibrary {
 	 * @param path
 	 * @return
 	 */
-
-	private synchronized static StopRecognition init(String key, KV<String, StopRecognition> kv) {
+	private synchronized static StopRecognition init(String key, KV<String, StopRecognition> kv, boolean reload) {
 		StopRecognition stopRecognition = kv.getV();
+
 		if (stopRecognition != null) {
-			return stopRecognition;
-		}
-		try {
+			if (reload) {
+				stopRecognition.clear();
+			} else {
+				return stopRecognition;
+			}
+		} else {
 			stopRecognition = new StopRecognition();
+		}
+
+		try {
 			LOG.debug("begin init FILTER !");
 			long start = System.currentTimeMillis();
 			String temp = null;
@@ -169,14 +175,8 @@ public class StopLibrary {
 	 * @param FILTER2
 	 */
 	public static void put(String key, String path, StopRecognition stopRecognition) {
-		KV<String, StopRecognition> kv = STOP.get(key);
-		if (kv == null) {
-			kv = KV.with(path, stopRecognition);
-		} else {
-			kv.setK(path);
-			kv.setV(stopRecognition);
-		}
-		STOP.put(key, kv);
+		STOP.put(key, KV.with(path, stopRecognition));
+		MyStaticValue.ENV.put(key, path);
 	}
 
 	/**
@@ -223,6 +223,11 @@ public class StopLibrary {
 	}
 
 	public static KV<String, StopRecognition> remove(String key) {
+		KV<String, StopRecognition> kv = STOP.get(key);
+		if (kv != null && kv.getV() != null) {
+			kv.getV().clear();
+		}
+		MyStaticValue.ENV.remove(key) ;
 		return STOP.remove(key);
 	}
 
@@ -231,8 +236,16 @@ public class StopLibrary {
 	}
 
 	public static void reload(String key) {
-		STOP.get(key).setV(null);
-		get(key);
+
+		if (!MyStaticValue.ENV.containsKey(key)) { //如果变量中不存在直接删掉这个key不解释了
+			remove(key);
+		}
+
+		putIfAbsent(key, MyStaticValue.ENV.get(key));
+
+		KV<String, StopRecognition> kv = STOP.get(key);
+
+		init(key, kv, true);
 	}
 
 }
