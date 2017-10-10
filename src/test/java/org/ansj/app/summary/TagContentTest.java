@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.ansj.app.keyword.Keyword;
+import org.ansj.splitWord.analysis.NlpAnalysis;
 import org.junit.Test;
+import org.nlpcn.commons.lang.util.IOUtil;
 import org.nlpcn.commons.lang.util.StringUtil;
 
 public class TagContentTest {
@@ -114,6 +116,25 @@ public class TagContentTest {
 
 		System.out.println(tagContent);
 	}
+	
+	@Test
+	public void test3() {
+		
+		TagContent tc = new TagContent("<begin>", "<end>");
+
+
+		String content = "您好,         1986年出国留学,2008年回国后 发现户口被注销(本人不知情),当时出国时还没有办理身份证,去入户派出所查询,只有入户的信息,其他材料一概没有,甚至没有所谓的注销情况之类(据说期间材料被转过三个派出所,最大可能是派出所转移时候遗失.现在是几个派出所互相推,) ,    1,这种情况我如何恢复户籍??没有身份证在中国处处不方便..    2,我有国外永久居留,如恢复的话是否可以保留?        谢谢" ;
+		
+		List<Keyword> keywords = new ArrayList<>() ;
+		
+		keywords.add(new Keyword("中国", 2d)) ;
+		keywords.add(new Keyword("信息", 2d)) ;
+
+		SummaryComputer sc = new SummaryComputer(22, true, "", content);
+		String tagContent = tc.tagContent(sc.toSummary(keywords));
+
+		System.out.println(tagContent);
+	}
 
 	@Test
 	public void englishWordTest(){
@@ -139,4 +160,7 @@ public class TagContentTest {
 
 		System.out.println(tagContent);
 	}
+
+
+
 }
